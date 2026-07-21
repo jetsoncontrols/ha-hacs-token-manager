@@ -77,6 +77,10 @@
       "title": "HACS is not installed",
       "description": "HACS Private Token Manager keeps HACS authenticated for private repositories, but no HACS integration was found. Install and set up HACS, then reload this integration."
     },
+    "download_auth_unavailable": {
+      "title": "Private-repo downloads may not work after a HACS update",
+      "description": "HACS Private Token Manager authenticates HACS's file downloads so private repositories can install and update. That could not be applied against the currently installed HACS version, most likely because HACS changed internally. Public repositories are unaffected, but installing or updating PRIVATE repositories will fail until HACS Private Token Manager is updated to match this HACS version. Please check for an update, or report it on the issue tracker."
+    },
     "restart_required": {
       "title": "Restart Home Assistant to apply the HACS token",
       "fix_flow": {

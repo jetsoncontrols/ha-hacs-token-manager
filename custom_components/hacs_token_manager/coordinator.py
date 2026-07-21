@@ -14,6 +14,7 @@ from .const import (
     CONF_TOKEN,
     DOMAIN,
     HACS_DOMAIN,
+    ISSUE_DOWNLOAD_AUTH,
     ISSUE_HACS_MISSING,
     ISSUE_PAT_INVALID,
     ISSUE_RESTART_REQUIRED,
@@ -56,6 +57,8 @@ class TokenManagerCoordinator(DataUpdateCoordinator[dict]):
         self.heal_count = 0
         # Set once we inject this session; only a restart clears it.
         self._restart_pending = False
+        # Set by async_setup_entry: did the HACS download-auth patch apply?
+        self.download_auth_ok = True
 
     def _hacs_entry(self) -> ConfigEntry | None:
         entries = self.hass.config_entries.async_entries(HACS_DOMAIN)
@@ -115,6 +118,22 @@ class TokenManagerCoordinator(DataUpdateCoordinator[dict]):
             )
             return {"healthy": False, "reason": "hacs_missing", "heal_count": self.heal_count}
         ir.async_delete_issue(self.hass, DOMAIN, ISSUE_HACS_MISSING)
+
+        # 2b. Could we authenticate HACS's downloads? If the patch could not be
+        # applied (HACS internals moved), private-repo installs will fail --
+        # surface it rather than let it fail silently on the next install.
+        if not self.download_auth_ok:
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                ISSUE_DOWNLOAD_AUTH,
+                is_fixable=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key=ISSUE_DOWNLOAD_AUTH,
+                learn_more_url="https://github.com/jetsoncontrols/ha-hacs-token-manager/issues",
+            )
+        else:
+            ir.async_delete_issue(self.hass, DOMAIN, ISSUE_DOWNLOAD_AUTH)
 
         # 3. Has HACS's token drifted away from ours? (first run, re-auth clobber)
         if hacs_entry.data.get(CONF_TOKEN) != pat:

@@ -24,10 +24,11 @@ type TokenManagerConfigEntry = ConfigEntry[TokenManagerCoordinator]
 
 async def async_setup_entry(hass: HomeAssistant, entry: TokenManagerConfigEntry) -> bool:
     """Set up from a config entry."""
-    # Make HACS authenticate its GitHub file downloads (private-repo content).
-    async_patch_hacs_download()
-
     coordinator = TokenManagerCoordinator(hass, entry)
+    # Make HACS authenticate its GitHub file downloads (private-repo content).
+    # If this can't apply (HACS internals moved), the coordinator raises a
+    # Repair so a private-download regression is visible, not silent.
+    coordinator.download_auth_ok = async_patch_hacs_download()
     # First refresh performs the initial token check + injection into HACS.
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator

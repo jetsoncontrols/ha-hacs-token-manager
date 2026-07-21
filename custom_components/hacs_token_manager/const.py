@@ -27,6 +27,7 @@ GITHUB_HEADERS = {
 ISSUE_PAT_INVALID = "pat_invalid"
 ISSUE_HACS_MISSING = "hacs_missing"
 ISSUE_RESTART_REQUIRED = "restart_required"
+ISSUE_DOWNLOAD_AUTH = "download_auth_unavailable"
 
 # Token check outcomes
 TOKEN_VALID = "valid"

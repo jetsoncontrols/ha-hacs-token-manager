@@ -13,12 +13,21 @@ for GitHub hosts, using HACS's own configured token. Everything else is
 untouched.
 
 This is intentionally a narrow, defensive monkey-patch: HACS exposes no config
-to authenticate downloads, so there is no other way. If HACS's internals move,
-the patch is skipped and downloads behave exactly as they do today (no crash).
+to authenticate downloads, so there is no other way. It is built to fail SAFE
+and LOUD against HACS updates:
+
+  * If HACS's internals moved (import fails, method or ``headers`` kwarg gone),
+    the patch is SKIPPED -- downloads behave exactly as they do today, nothing
+    breaks -- and ``async_patch_hacs_download`` returns False so the caller can
+    surface a Repair instead of failing silently.
+  * We only patch when ``async_download_file`` still accepts an explicit
+    ``headers`` keyword, so a signature change can never make us break a
+    download that would otherwise have worked.
 """
 
 from __future__ import annotations
 
+import inspect
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,21 +40,43 @@ _GITHUB_HOSTS = (
 )
 _PATCH_MARKER = "_jetson_hacs_auth"
 
+_SKIP_MSG = (
+    "HACS download-auth patch could not be applied (%s); HACS may have changed. "
+    "Public repos are unaffected, but installing/updating PRIVATE repos will "
+    "fail until this is updated."
+)
 
-def async_patch_hacs_download() -> None:
-    """Idempotently wrap HacsBase.async_download_file to authenticate GitHub."""
+
+def async_patch_hacs_download() -> bool:
+    """Wrap HacsBase.async_download_file to authenticate GitHub downloads.
+
+    Returns True if the patch is active (now or already), False if it had to be
+    skipped -- in which case the caller should surface it (private-repo installs
+    will not work).
+    """
     try:
         from custom_components.hacs.base import HacsBase
     except Exception:  # noqa: BLE001 - HACS absent or internals moved
-        _LOGGER.debug("HACS base not importable; download-auth patch skipped")
-        return
+        _LOGGER.warning(_SKIP_MSG, "hacs.base not importable")
+        return False
 
     original = getattr(HacsBase, "async_download_file", None)
     if original is None:
-        _LOGGER.debug("HacsBase.async_download_file missing; patch skipped")
-        return
+        _LOGGER.warning(_SKIP_MSG, "async_download_file missing")
+        return False
     if getattr(original, _PATCH_MARKER, False):
-        return  # already patched this session
+        return True  # already applied this session
+
+    # Only patch when the method still accepts an explicit `headers` kwarg. If
+    # the signature changed, do NOT patch: passing headers= could be silently
+    # dropped (auth lost) or raise (breaking EVERY download, public included).
+    try:
+        if "headers" not in inspect.signature(original).parameters:
+            _LOGGER.warning(_SKIP_MSG, "async_download_file no longer accepts headers")
+            return False
+    except (TypeError, ValueError):
+        _LOGGER.warning(_SKIP_MSG, "async_download_file signature not introspectable")
+        return False
 
     async def _authenticated_download_file(self, url, *, headers=None, **kwargs):
         token = getattr(getattr(self, "configuration", None), "token", None)
@@ -56,3 +87,4 @@ def async_patch_hacs_download() -> None:
     setattr(_authenticated_download_file, _PATCH_MARKER, True)
     HacsBase.async_download_file = _authenticated_download_file
     _LOGGER.debug("Patched HACS async_download_file to authenticate GitHub downloads")
+    return True
