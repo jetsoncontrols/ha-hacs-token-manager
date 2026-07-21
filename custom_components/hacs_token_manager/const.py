@@ -38,7 +38,7 @@ TOKEN_UNKNOWN = "unknown"
 # an OAuth App under the org with "Enable Device Flow" checked, then paste its
 # Client ID here. Empty string => the device-flow menu option aborts and only
 # the manual-token path is available.
-CLIENT_ID = ""
+CLIENT_ID = "Ov23lifok77OAgPL1LUa"
 
 # "repo" grants the token access to every private repository the authorizing
 # user can reach (read + write) -- i.e. no per-repo restriction, by design.
