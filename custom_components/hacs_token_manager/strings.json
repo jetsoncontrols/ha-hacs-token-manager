@@ -3,7 +3,18 @@
     "step": {
       "user": {
         "title": "HACS Private Token Manager",
-        "description": "Paste a GitHub token that can read your private HACS repositories. A fine-grained personal access token scoped to just those repositories, with Repository permissions → Contents: Read-only, is recommended.",
+        "description": "Choose how to give HACS a GitHub token that can read your private repositories.",
+        "menu_options": {
+          "device": "Authorize with GitHub (browser login)",
+          "manual": "Enter a token manually"
+        }
+      },
+      "device": {
+        "title": "Waiting for GitHub authorization"
+      },
+      "manual": {
+        "title": "Enter a GitHub token",
+        "description": "Paste a token that can read your private repositories: a classic token with the 'repo' scope, or a fine-grained token with Contents: Read-only on the repositories you want.",
         "data": {
           "token": "GitHub token",
           "test_repo": "Test repository (optional)"
@@ -22,13 +33,22 @@
         }
       }
     },
+    "progress": {
+      "wait_for_device": "1. Open {url}\n2. Enter the code:\n```\n{code}\n```\n3. Authorize access to your private repositories.\n\nThis screen updates automatically once you approve."
+    },
     "error": {
       "invalid_token": "GitHub rejected this token, or it cannot read the test repository. Check the token and its repository/Contents permissions.",
       "cannot_connect": "Could not reach GitHub to validate the token. Please try again."
     },
     "abort": {
       "already_configured": "HACS Private Token Manager is already set up.",
-      "reconfigure_successful": "GitHub token updated."
+      "reconfigure_successful": "GitHub token updated.",
+      "no_client_id": "This build has no GitHub OAuth App configured, so browser login is unavailable. Use 'Enter a token manually' instead.",
+      "device_flow_disabled": "The GitHub OAuth App does not have Device Flow enabled. Enable it in the app settings, then try again.",
+      "expired_token": "The authorization request expired before it was approved. Please start over.",
+      "access_denied": "Authorization was denied on GitHub.",
+      "device_flow_failed": "GitHub authorization failed. Please try again.",
+      "cannot_connect": "Could not reach GitHub. Please try again."
     }
   },
   "issues": {

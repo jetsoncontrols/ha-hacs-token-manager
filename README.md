@@ -4,8 +4,10 @@ A small Home Assistant integration that lets **HACS install and update your
 private GitHub repositories** — through the normal HACS UI, with no fork and no
 patching of HACS.
 
-Install it via HACS, hand it a GitHub token that can read your private repos,
-and it keeps HACS authenticated with that token. It also **self-heals** when
+Install it via HACS, **authorize with GitHub in the browser** (the same
+device-flow login HACS itself uses — no token to create by hand), and it keeps
+HACS authenticated with that token. The token can read **every private
+repository the authorizing user has access to**. It also **self-heals** when
 HACS quietly reverts to its own public-only token, and raises a Home Assistant
 **Repair** when the token itself expires.
 
@@ -45,7 +47,6 @@ This integration automates exactly that, safely:
 
 - Home Assistant **2024.11** or newer
 - HACS installed and set up
-- A GitHub token that can read your private repositories
 
 ## Installation
 
@@ -53,26 +54,50 @@ This integration automates exactly that, safely:
    `jetsoncontrols/ha-hacs-token-manager`, category **Integration**.
 2. Install **HACS Private Token Manager** and restart Home Assistant.
 3. **Settings → Devices & services → Add integration → HACS Private Token
-   Manager**, and paste your token.
+   Manager**, then choose one of the two setup paths below.
 
-## Creating the GitHub token (recommended: fine-grained, least-privilege)
+## Setup
 
-Use a **fine-grained personal access token** so the blast radius is minimal:
+### Option 1 — Authorize with GitHub (browser login, recommended)
 
-- **Resource owner:** the org/account that owns your private repos
-- **Repository access:** *Only select repositories* → pick just your HACS
-  distribution repos
-- **Repository permissions → Contents:** *Read-only*
-  (Metadata: Read is added automatically — that's all HACS's read calls need)
-- **Expiration:** as long-lived as your policy allows (see caveats)
+Pick **Authorize with GitHub**. You'll see a code and a link
+(`github.com/login/device`); open it, enter the code, and approve. That's it —
+the resulting token can read **any private repository your GitHub account has
+access to**, and the integration injects it into HACS for you. This is the same
+device-flow login HACS uses; no personal access token to create or store.
 
-A classic PAT with the `repo` scope also works, but it grants read/write to
-**every** repo on the account — prefer fine-grained.
+> This path requires the maintainer to have configured an OAuth App Client ID
+> in the build (see *Maintainer notes*). If it isn't configured, use Option 2.
 
-In the integration's setup form you can optionally provide a **Test
-repository** (`owner/name`). When set, the token is verified to actually *read
-that private repo*, not merely to authenticate — a good guard against a token
-with the wrong repository scope.
+### Option 2 — Enter a token manually (headless / automated setup)
+
+Pick **Enter a token manually** and paste a token that can read your private
+repos:
+
+- a **classic PAT** with the `repo` scope (access to every private repo the
+  account can reach), or
+- a **fine-grained PAT** with Repository permissions → **Contents: Read-only**
+  on the repos you want (least-privilege).
+
+Use this path for scripted/Ansible deploys where a browser login isn't
+practical. You can optionally provide a **Test repository** (`owner/name`) to
+verify the token can actually read a private repo, not just authenticate.
+
+## Maintainer notes — the OAuth App
+
+Browser login uses a GitHub **OAuth App** owned by the org. To enable it:
+
+1. Org → **Settings → Developer settings → OAuth Apps → New OAuth App**.
+2. Name it (e.g. *Jetson HACS Private Token Manager*); Homepage URL = this repo;
+   Authorization callback URL = this repo (unused by the device flow, but the
+   field is required).
+3. **Check “Enable Device Flow.”**
+4. Copy the **Client ID** into `CLIENT_ID` in
+   `custom_components/hacs_token_manager/const.py` and release. The Client ID is
+   a public value; no client secret is needed for the device flow.
+
+The `repo` scope is intentional: it gives the token access to every private
+repository the authorizing user can reach, with no per-repo restriction.
 
 ---
 

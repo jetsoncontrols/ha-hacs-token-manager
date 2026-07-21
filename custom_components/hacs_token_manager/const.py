@@ -31,3 +31,20 @@ ISSUE_HACS_MISSING = "hacs_missing"
 TOKEN_VALID = "valid"
 TOKEN_INVALID = "invalid"
 TOKEN_UNKNOWN = "unknown"
+
+# --- OAuth App device flow (browser login) ---
+# Client ID of the GitHub OAuth App used for the device flow. This is a PUBLIC
+# value and safe to commit (the device flow needs no client secret). Register
+# an OAuth App under the org with "Enable Device Flow" checked, then paste its
+# Client ID here. Empty string => the device-flow menu option aborts and only
+# the manual-token path is available.
+CLIENT_ID = ""
+
+# "repo" grants the token access to every private repository the authorizing
+# user can reach (read + write) -- i.e. no per-repo restriction, by design.
+GITHUB_SCOPE = "repo"
+
+GITHUB_DEVICE_URL = "https://github.com/login/device"
+GITHUB_DEVICE_CODE_URL = "https://github.com/login/device/code"
+GITHUB_ACCESS_TOKEN_URL = "https://github.com/login/oauth/access_token"
+GITHUB_DEVICE_GRANT = "urn:ietf:params:oauth:grant-type:device_code"
