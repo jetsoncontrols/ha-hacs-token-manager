@@ -23,3 +23,7 @@ jobs:
       - uses: hacs/action@main
         with:
           category: integration
+          # This integration is installed as a private custom repository, never
+          # submitted to the default HACS store, so the brands check (which
+          # requires listing in home-assistant/brands) does not apply.
+          ignore: brands
