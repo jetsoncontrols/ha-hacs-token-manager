@@ -1,0 +1,61 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "HACS Private Token Manager",
+        "description": "Paste a GitHub token that can read your private HACS repositories. A fine-grained personal access token scoped to just those repositories, with Repository permissions → Contents: Read-only, is recommended.",
+        "data": {
+          "token": "GitHub token",
+          "test_repo": "Test repository (optional)"
+        },
+        "data_description": {
+          "token": "Stored encrypted in the config entry and mirrored into HACS so private custom repositories install and update normally.",
+          "test_repo": "Optional owner/name (e.g. owner/your-private-repo). If set, the token is verified to actually read this private repository, not just to authenticate."
+        }
+      },
+      "reconfigure": {
+        "title": "Update GitHub token",
+        "description": "Rotate the GitHub token used for private HACS repositories.",
+        "data": {
+          "token": "GitHub token",
+          "test_repo": "Test repository (optional)"
+        }
+      }
+    },
+    "error": {
+      "invalid_token": "GitHub rejected this token, or it cannot read the test repository. Check the token and its repository/Contents permissions.",
+      "cannot_connect": "Could not reach GitHub to validate the token. Please try again."
+    },
+    "abort": {
+      "already_configured": "HACS Private Token Manager is already set up.",
+      "reconfigure_successful": "GitHub token updated."
+    }
+  },
+  "issues": {
+    "pat_invalid": {
+      "title": "GitHub token for private HACS repos is invalid",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Update GitHub token",
+            "description": "The stored GitHub token is no longer valid (expired or revoked), so HACS can no longer read your private repositories. Paste a new token to restore access.",
+            "data": {
+              "token": "GitHub token"
+            }
+          }
+        },
+        "error": {
+          "invalid_token": "GitHub rejected this token, or it cannot read the test repository.",
+          "cannot_connect": "Could not reach GitHub to validate the token. Please try again."
+        },
+        "abort": {
+          "entry_missing": "The HACS Private Token Manager entry no longer exists."
+        }
+      }
+    },
+    "hacs_missing": {
+      "title": "HACS is not installed",
+      "description": "HACS Private Token Manager keeps HACS authenticated for private repositories, but no HACS integration was found. Install and set up HACS, then reload this integration."
+    }
+  }
+}

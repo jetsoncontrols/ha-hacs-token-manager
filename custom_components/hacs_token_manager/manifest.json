@@ -1,0 +1,13 @@
+{
+  "domain": "hacs_token_manager",
+  "name": "HACS Private Token Manager",
+  "after_dependencies": ["hacs"],
+  "codeowners": ["@scottshanafelt"],
+  "config_flow": true,
+  "documentation": "https://github.com/jetsoncontrols/ha-hacs-token-manager",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/jetsoncontrols/ha-hacs-token-manager/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
