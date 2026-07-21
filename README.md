@@ -120,6 +120,16 @@ You can rotate the token proactively at any time via the integration's
 
 ## Caveats & design notes
 
+- **HACS downloads file content without authenticating — so this integration
+  patches that too.** The injected token makes HACS's *API* calls (metadata,
+  releases, file tree) authenticated, so private repos become visible and
+  updatable. But HACS fetches the actual file *content* from
+  `raw.githubusercontent.com` via `async_download_file` **without** its token,
+  so a private-repo install/update 404s ("Could not download"). That host does
+  honor `Authorization: token …`, so `hacs_patch.py` wraps `async_download_file`
+  to add it for GitHub hosts, using HACS's own token. It's a narrow, defensive
+  monkey-patch (HACS has no config to authenticate downloads); if HACS's
+  internals move, it self-disables and downloads behave as they do today.
 - **HACS reads its token once, at entry setup, and a restart is required to
   apply a new one.** HACS reloads itself on any config-entry change, and that
   reload is unsafe (it forwards its `switch`/`update` platforms in a deferred
