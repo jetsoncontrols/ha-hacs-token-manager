@@ -18,10 +18,28 @@ from homeassistant.helpers.selector import (
 from .const import (
     CONF_TEST_REPO,
     CONF_TOKEN,
+    ISSUE_RESTART_REQUIRED,
     TOKEN_INVALID,
     TOKEN_UNKNOWN,
 )
 from .github import async_check_token
+
+
+class RestartFixFlow(RepairsFlow):
+    """One-click Home Assistant restart to apply the injected HACS token."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+        return await self.async_step_confirm()
+
+    async def async_step_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        if user_input is not None:
+            # On restart HACS loads with our token and the coordinator no longer
+            # raises this issue, so it clears itself.
+            await self.hass.services.async_call("homeassistant", "restart")
+            return self.async_create_entry(title="", data={})
+        return self.async_show_form(step_id="confirm", data_schema=vol.Schema({}))
 
 
 class PatFixFlow(RepairsFlow):
@@ -77,5 +95,7 @@ async def async_create_fix_flow(
     hass: HomeAssistant, issue_id: str, data: dict[str, Any] | None
 ) -> RepairsFlow:
     """Create the repair flow for a raised issue."""
+    if issue_id == ISSUE_RESTART_REQUIRED:
+        return RestartFixFlow()
     entry_id = (data or {}).get("entry_id")
     return PatFixFlow(entry_id)

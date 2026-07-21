@@ -76,6 +76,17 @@
     "hacs_missing": {
       "title": "HACS is not installed",
       "description": "HACS Private Token Manager keeps HACS authenticated for private repositories, but no HACS integration was found. Install and set up HACS, then reload this integration."
+    },
+    "restart_required": {
+      "title": "Restart Home Assistant to apply the HACS token",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Restart Home Assistant",
+            "description": "Your GitHub token has been stored in HACS, but HACS only reads its token at startup. Restart Home Assistant now to apply it so your private repositories become available in HACS. (You can also restart later from Settings → System.)"
+          }
+        }
+      }
     }
   }
 }

@@ -26,6 +26,7 @@ GITHUB_HEADERS = {
 # Repair issue ids
 ISSUE_PAT_INVALID = "pat_invalid"
 ISSUE_HACS_MISSING = "hacs_missing"
+ISSUE_RESTART_REQUIRED = "restart_required"
 
 # Token check outcomes
 TOKEN_VALID = "valid"

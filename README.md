@@ -105,8 +105,8 @@ repository the authorizing user can reach, with no per-repo restriction.
 
 | Situation | What happens |
 |-|-|
-| First setup | Token is validated, written into HACS's entry, HACS reloaded. Private custom repos now resolve. |
-| HACS re-authenticates (reverts to a public-only token) | Detected within ~15 min (and on restart); the capable token is re-injected and HACS reloaded automatically. No action needed. |
+| First setup | Token is validated and written into HACS's entry (without disturbing HACS), then a Repair asks you to **restart Home Assistant** to apply it. After the restart, private custom repos resolve. |
+| HACS re-authenticates (reverts to a public-only token) | Detected within ~15 min (and on restart); the capable token is re-injected and a restart Repair is raised. |
 | Your token expires or is revoked | A **Repair** appears ("GitHub token for private HACS repos is invalid") — click *Fix* and paste a new token. |
 | HACS not installed | An informational Repair reminds you to install HACS. |
 
@@ -120,10 +120,16 @@ You can rotate the token proactively at any time via the integration's
 
 ## Caveats & design notes
 
-- **HACS reads its token once, at entry setup.** That's why healing = rewrite
-  the entry + reload, and why a *static* long-lived token is the right fit. A
-  rotating token (e.g. a GitHub App installation token that expires hourly)
-  would force a HACS reload on every rotation and is intentionally not used.
+- **HACS reads its token once, at entry setup, and a restart is required to
+  apply a new one.** HACS reloads itself on any config-entry change, and that
+  reload is unsafe (it forwards its `switch`/`update` platforms in a deferred
+  startup stage, so an externally-triggered reload leaves HACS in
+  `FAILED_UNLOAD`). So this integration writes the token into HACS's entry with
+  HACS's own update listener suppressed — HACS keeps running untouched on its
+  old token — and asks for a restart, which is the only reliable way to apply
+  it. This also makes a *static* long-lived token the right fit: a rotating
+  token (e.g. an hourly GitHub App installation token) would demand a restart
+  on every rotation, so it is intentionally not used.
 - **Re-auth reverts the token.** If HACS's token ever goes invalid, HACS's
   re-auth writes a fresh public-only device token over yours. This integration
   detects that drift and re-injects — but keep your token long-lived so
