@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.const import EVENT_HOMEASSISTANT_STARTED
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -53,6 +54,29 @@ class TokenManagerCoordinator(DataUpdateCoordinator[dict]):
         entries = self.hass.config_entries.async_entries(HACS_DOMAIN)
         return entries[0] if entries else None
 
+    def _reload_hacs(self, entry_id: str) -> None:
+        """Reload HACS so its live client picks up the freshly-injected token.
+
+        Never reload HACS while HA is still starting: at boot HACS may still be
+        mid-setup, and reloading it then races its platform forwards (switch/
+        update) -> "Config entry was never loaded". When running, a scheduled
+        reload of a fully-loaded HACS is clean; during startup we defer until
+        HA has fully started.
+        """
+        if self.hass.is_running:
+            _LOGGER.debug("reloading HACS now (HA running)")
+            self.hass.config_entries.async_schedule_reload(entry_id)
+            return
+
+        _LOGGER.debug("HA still starting; deferring HACS reload until started")
+
+        @callback
+        def _on_started(_event: Event) -> None:
+            _LOGGER.debug("HA started; firing deferred HACS reload")
+            self.hass.config_entries.async_schedule_reload(entry_id)
+
+        self.hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STARTED, _on_started)
+
     async def _async_update_data(self) -> dict:
         pat: str = self.entry.data[CONF_TOKEN]
         test_repo: str | None = self.entry.data.get(CONF_TEST_REPO)
@@ -99,7 +123,7 @@ class TokenManagerCoordinator(DataUpdateCoordinator[dict]):
             self.hass.config_entries.async_update_entry(
                 hacs_entry, data={**hacs_entry.data, CONF_TOKEN: pat}
             )
-            await self.hass.config_entries.async_reload(hacs_entry.entry_id)
+            self._reload_hacs(hacs_entry.entry_id)
             self.heal_count += 1
             return {"healthy": True, "reason": "healed", "heal_count": self.heal_count}
 

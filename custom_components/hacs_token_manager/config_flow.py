@@ -9,6 +9,7 @@ Two ways to provide a private-repo-capable GitHub token:
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
 import voluptuous as vol
@@ -35,6 +36,8 @@ from .github_device import (
     async_start_device_flow,
     async_wait_for_token,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 _MANUAL_SCHEMA = vol.Schema(
     {
@@ -94,6 +97,7 @@ class TokenManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             )
 
         if self._task.done():
+            _LOGGER.debug("device-flow task done; exc=%s", self._task.exception())
             try:
                 self._token = self._task.result()
             except DeviceFlowError as err:
@@ -101,7 +105,9 @@ class TokenManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                 self._device = None
                 self._task = None
                 return self.async_show_progress_done(next_step_id="device_failed")
-            return self.async_show_progress_done(next_step_id="device")
+            # Hand off to a SEPARATE step -- async_show_progress_done must not
+            # point back at the progress step or the spinner never advances.
+            return self.async_show_progress_done(next_step_id="finish")
 
         return self.async_show_progress(
             step_id="device",
@@ -112,6 +118,13 @@ class TokenManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             },
             progress_task=self._task,
         )
+
+    async def async_step_finish(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Create the entry once the device flow has a token."""
+        _LOGGER.debug("device-flow finishing; creating entry")
+        return self._create_entry(self._token)
 
     async def async_step_device_failed(
         self, user_input: dict[str, Any] | None = None

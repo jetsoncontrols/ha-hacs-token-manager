@@ -8,6 +8,7 @@ private repository the authorizing user can access.
 from __future__ import annotations
 
 import asyncio
+import logging
 
 import aiohttp
 
@@ -20,6 +21,8 @@ from .const import (
     GITHUB_DEVICE_GRANT,
     GITHUB_SCOPE,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class DeviceFlowError(Exception):
@@ -68,9 +71,11 @@ async def async_wait_for_token(
     interval = int(device.get("interval", 5)) + 1
     remaining = int(device.get("expires_in", 900))
 
+    polls = 0
     while remaining > 0:
         await asyncio.sleep(interval)
         remaining -= interval
+        polls += 1
         try:
             async with session.post(
                 GITHUB_ACCESS_TOKEN_URL,
@@ -81,14 +86,17 @@ async def async_wait_for_token(
                     "grant_type": GITHUB_DEVICE_GRANT,
                 },
             ) as resp:
-                payload = await resp.json()
-        except aiohttp.ClientError:
+                payload = await resp.json(content_type=None)
+        except aiohttp.ClientError as err:
+            _LOGGER.debug("device-flow poll %s: client error %s", polls, err)
             continue  # transient network error; keep polling
 
         if token := payload.get("access_token"):
+            _LOGGER.debug("device-flow poll %s: access token received", polls)
             return token
 
         error = payload.get("error")
+        _LOGGER.debug("device-flow poll %s: error=%s", polls, error)
         if error == "authorization_pending":
             continue
         if error == "slow_down":
