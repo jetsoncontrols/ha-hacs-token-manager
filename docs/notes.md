@@ -1,6 +1,6 @@
 # Notes
 
-HA integration that lets HACS install private GitHub repos. Created 2026-07-21, current **v0.2.4**.
+HA integration that lets HACS install private GitHub repos. Created 2026-07-21, current **v0.2.5**.
 
 **`jetsoncontrols/ha-hacs-token-manager`** — public repo (the public bootstrap manager), domain `hacs_token_manager`, local: `~/Development/CONTROLS/ha-hacs-token-manager`.
 
@@ -19,6 +19,10 @@ HA integration that lets HACS install private GitHub repos. Created 2026-07-21, 
 **Dev-container verification (v0.2.1):** proven end-to-end in the HA-core dev container (`~/Development/hass_core`, container `blissful_bouman`, HA on localhost:8123; component mounted via `.devcontainer/devcontainer.json` + copied into `config/custom_components/`): browser auth → token → inject into HACS entry `data.token` → HACS re-ran setup rebuilding its live client from our token; plus the boot-drift self-heal path. Three bugs found+fixed there (commit `7f3f093`): (1) `async_show_progress_done` must hand off to a SEPARATE `finish` step (pointing back at the progress step hangs the spinner); (2) don't reload HACS inline in our first-refresh (`OperationNotAllowed`) — use `async_schedule_reload`, and during startup defer it to `EVENT_HOMEASSISTANT_STARTED` so HACS is fully loaded; (3) that started listener must be `@callback` (else `async_schedule_reload` runs off-loop → thread-safety RuntimeError).
 
 ---
+
+## Integration icon (v0.2.5)
+
+`custom_components/hacs_token_manager/brand/` holds `icon.png` 256², `icon@2x.png` 512² and lighter `dark_icon*.png`. HA 2026.3+ serves a custom integration's own `brand/` folder before the brands CDN (which has no `hacs_token_manager`). An original mark: a git branch graph with a key over it (grey #424242 + blue #2996D6; #C8C8C8 + #41BDF5 on dark), drawn with Pillow; not GitHub's Octocat, which is GitHub's trademark.
 
 ## CRITICAL gotcha 1 (v0.2.2) — HACS CANNOT be reloaded from outside
 
